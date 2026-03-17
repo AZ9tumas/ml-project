@@ -1,0 +1,44 @@
+# 🔹 Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 🔹 Virtual environment
+venv/
+env/
+.venv/
+
+# 🔹 Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# 🔹 OS files
+.DS_Store
+Thumbs.db
+
+# 🔹 Logs
+*.log
+
+# 🔹 Model files (optional - ignore if large)
+*.pkl
+*.joblib
+
+# 🔹 Data files (IMPORTANT)
+# If dataset is large, ignore it
+*.csv
+
+# 🔹 But keep sample data (optional)
+!sample.csv
+
+# 🔹 Environment variables
+.env
+
+# 🔹 VS Code
+.vscode/
+
+# 🔹 Devcontainer
+.devcontainer/
+
+# 🔹 Temporary files
+*.tmp
+*.temp
