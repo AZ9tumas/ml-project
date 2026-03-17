@@ -1,0 +1,46 @@
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}What Is This Project About?}{3}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Why Does This Matter?}{3}{subsection.1.2}%
+\contentsline {section}{\numberline {2}The Dataset}{3}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Source}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Size and Shape}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Columns}{4}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Per-User Play Counts}{4}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}A Peek at the Raw Data}{4}{subsection.2.5}%
+\contentsline {section}{\numberline {3}High-Level Pipeline Overview}{4}{section.3}%
+\contentsline {section}{\numberline {4}Step 1 — Feature Engineering}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}What Is Feature Engineering?}{5}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Combining Date and Time}{5}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Extracting the Hour}{5}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Time Period Bins}{5}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Day of the Week and Weekend Flag}{6}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Summary of Engineered Features}{6}{subsection.4.6}%
+\contentsline {section}{\numberline {5}Step 2 --- Aggregating to a Daily Time Series}{6}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Why Aggregate?}{6}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Choosing a User}{6}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Code}{6}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}What Each Line Does}{7}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Step 3 --- Stationarity, Decomposition, and ACF/PACF}{7}{section.6}%
+\contentsline {subsection}{\numberline {6.1}What Is a Time Series?}{7}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Stationarity and the ADF Test}{7}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}What Is Stationarity?}{7}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}Augmented Dickey--Fuller (ADF) Test}{7}{subsubsection.6.2.2}%
+\contentsline {subsubsection}{\numberline {6.2.3}Differencing}{8}{subsubsection.6.2.3}%
+\contentsline {subsection}{\numberline {6.3}Seasonal Decomposition}{8}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}ACF and PACF Plots}{8}{subsection.6.4}%
+\contentsline {subsubsection}{\numberline {6.4.1}Autocorrelation Function (ACF)}{8}{subsubsection.6.4.1}%
+\contentsline {subsubsection}{\numberline {6.4.2}Partial Autocorrelation Function (PACF)}{8}{subsubsection.6.4.2}%
+\contentsline {subsubsection}{\numberline {6.4.3}How to Read ACF/PACF}{9}{subsubsection.6.4.3}%
+\contentsline {subsection}{\numberline {6.5}SARIMA Model}{9}{subsection.6.5}%
+\contentsline {subsubsection}{\numberline {6.5.1}What Is ARIMA?}{9}{subsubsection.6.5.1}%
+\contentsline {subsubsection}{\numberline {6.5.2}Adding Seasonality: SARIMA}{9}{subsubsection.6.5.2}%
+\contentsline {section}{\numberline {7}Step 4 --- SARIMA Forecasting and Evaluation}{9}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Train/Test Split (Temporal)}{10}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Evaluation Metric: MAE}{10}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Forecasting and Plotting}{10}{subsection.7.3}%
+\contentsline {section}{\numberline {8}Concepts Glossary}{10}{section.8}%
+\contentsline {section}{\numberline {9}Libraries and Tools Used}{11}{section.9}%
+\contentsline {section}{\numberline {10}Project File Structure}{11}{section.10}%
+\contentsline {section}{\numberline {11}Putting It All Together — End-to-End Walkthrough}{12}{section.11}%
+\contentsline {section}{\numberline {12}Potential Improvements}{12}{section.12}%
+\contentsline {section}{\numberline {13}Conclusion}{13}{section.13}%

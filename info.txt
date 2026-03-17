@@ -1,0 +1,65 @@
+The easiest one is the play counts per time bin path — daily listening activity per user. No embeddings, no SVD, just counting plays and modeling that count over time.
+
+
+
+Step 1 — Aggregate to a daily time series
+
+import pandas as pd
+
+df = pd.read_csv('lastfm_data.csv')
+df['datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True)
+
+# Pick one user to start
+user = 'Babs_05'
+user_df = df[df['Username'] == user]
+
+# Count plays per day
+ts = user_df.groupby(user_df['datetime'].dt.date).size()
+ts.index = pd.to_datetime(ts.index)
+ts = ts.asfreq('D').fillna(0)  # fill days with no listens as 0
+
+
+Step 2 — Check stationarity (ADF test)
+
+from statsmodels.tsa.stattools import adfuller
+
+result = adfuller(ts)
+print(f'p-value: {result[1]:.4f}')
+# p < 0.05 → stationary (good to go)
+# p > 0.05 → difference the series: ts = ts.diff().dropna()
+
+Step 3 — Decompose and plot ACF/PACF
+
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+seasonal_decompose(ts, model='additive', period=7).plot()
+
+plot_acf(ts, lags=30)
+plot_pacf(ts, lags=30)
+
+Step 4 — Fit a SARIMA model
+
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+# Start with this order, adjust after reading ACF/PACF
+model = SARIMAX(ts, order=(1,0,1), seasonal_order=(1,0,1,7))
+result = model.fit()
+print(result.summary())
+
+Step 5 — Forecast and evaluate
+
+from sklearn.metrics import mean_absolute_error
+
+split = int(len(ts) * 0.8)
+train, test = ts[:split], ts[split:]
+
+model = SARIMAX(train, order=(1,0,1), seasonal_order=(1,0,1,7)).fit()
+forecast = model.forecast(steps=len(test))
+
+print(f'MAE: {mean_absolute_error(test, forecast):.2f}')
+pd.DataFrame({'actual': test, 'forecast': forecast}).plot()
+
+
+
+
