@@ -1,0 +1,395 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{float}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.97}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numbersep=5pt,
+    showstringspaces=false,
+    tabsize=4
+}
+\lstset{style=pythonstyle}
+
+\title{\textbf{Vibe Forecaster} \\ \large Implementation Report — Test Implementation}
+\author{ML Project — Exploratory Test}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introduction}
+
+The \textbf{Vibe Forecaster} is a music mood prediction system that combines data from Last.fm (listening history) and Spotify (audio features) to:
+
+\begin{enumerate}
+    \item Cluster songs into meaningful ``vibe'' groups using K-Means clustering
+    \item Train an LSTM neural network to predict the user's likely music mood at any given time
+    \item Present results through an interactive Streamlit dashboard
+\end{enumerate}
+
+This implementation under \texttt{test1/} serves as an exploratory test to evaluate whether this approach yields meaningful and actionable predictions from real listening data.
+
+% ============================================================
+\section{System Architecture}
+
+The system follows a sequential pipeline architecture:
+
+\begin{verbatim}
+Last.fm API  -->  Scrobble Data  -->  Merge + Feature  -->  K-Means
+Spotify API  -->  Audio Features       Engineering         Clustering
+                                                              |
+                                                              v
+Streamlit  <--  Prediction  <--  LSTM Training  <--  Clustered
+Dashboard       Engine                                Dataset
+\end{verbatim}
+
+\subsection{Data Flow}
+\begin{enumerate}
+    \item \textbf{Extraction}: Scrobble history from Last.fm API (or existing CSV data)
+    \item \textbf{Enrichment}: Spotify audio features for each unique track
+    \item \textbf{Feature Engineering}: Temporal features + audio features merged
+    \item \textbf{Clustering}: K-Means groups songs into vibe clusters
+    \item \textbf{Training}: LSTM learns temporal patterns in vibe sequences
+    \item \textbf{Prediction}: Real-time vibe forecasting
+    \item \textbf{Visualization}: Interactive Streamlit dashboard
+\end{enumerate}
+
+% ============================================================
+\section{Phase 0 — Environment Setup}
+
+\subsection{Dependencies}
+All required packages are listed in \texttt{requirements.txt}:
+
+\begin{lstlisting}[language=bash]
+pip install -r requirements.txt
+\end{lstlisting}
+
+Key libraries and their roles:
+\begin{itemize}
+    \item \texttt{pandas}, \texttt{numpy} — Data manipulation
+    \item \texttt{spotipy} — Spotify Web API client
+    \item \texttt{requests} — HTTP requests for Last.fm API
+    \item \texttt{scikit-learn} — K-Means clustering, StandardScaler, PCA, metrics
+    \item \texttt{tensorflow} — LSTM neural network
+    \item \texttt{streamlit}, \texttt{plotly} — Interactive dashboard
+    \item \texttt{matplotlib}, \texttt{seaborn} — Static visualizations
+\end{itemize}
+
+\subsection{API Credentials}
+Copy \texttt{.env.template} to \texttt{.env} and populate with credentials from:
+\begin{itemize}
+    \item \href{https://developer.spotify.com/dashboard}{Spotify Developer Dashboard}
+    \item \href{https://www.last.fm/api/account/create}{Last.fm API}
+\end{itemize}
+
+% ============================================================
+\section{Phase 1 — Data Extraction}
+
+\subsection{Script: \texttt{1\_extract\_lastfm.py}}
+Fetches scrobble history from the Last.fm API using the \texttt{user.getrecenttracks} endpoint.
+
+\textbf{Key design decisions:}
+\begin{itemize}
+    \item Fetches 200 tracks per page (API maximum) across 50 pages ($\approx$10,000 tracks)
+    \item Adds 250ms delay between requests to respect rate limits
+    \item Skips ``now playing'' tracks (no timestamp available)
+    \item Converts Unix timestamps to datetime for downstream processing
+\end{itemize}
+
+\textbf{Output}: \texttt{data/scrobbles.csv} with columns: \texttt{artist}, \texttt{track}, \texttt{album}, \texttt{timestamp}, \texttt{datetime}
+
+\subsection{Script: \texttt{1b\_convert\_existing\_data.py}}
+Alternative path for users who already have Last.fm data exported as \texttt{fm\_data.csv}. Converts the existing format (Username, Artist, Track, Album, Date, Time) to the standard scrobbles format.
+
+\subsection{Script: \texttt{2\_fetch\_audio\_features.py}}
+Enriches each unique (artist, track) pair with Spotify's audio features via the Web API.
+
+\textbf{Audio features retrieved:}
+\begin{itemize}
+    \item \textbf{valence} (0--1): Musical positiveness / happiness
+    \item \textbf{energy} (0--1): Intensity and activity
+    \item \textbf{danceability} (0--1): Suitability for dancing
+    \item \textbf{acousticness} (0--1): Confidence the track is acoustic
+    \item \textbf{instrumentalness} (0--1): Predicts whether a track has no vocals
+    \item \textbf{tempo}: Estimated BPM
+    \item \textbf{loudness}: Overall loudness in dB
+\end{itemize}
+
+\textbf{Rate limiting}: 100ms delay between requests to stay within Spotify's limits.
+
+% ============================================================
+\section{Phase 2 — Feature Engineering}
+
+\subsection{Script: \texttt{3\_build\_dataset.py}}
+
+Merges scrobble history with audio features and engineers temporal features:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Feature} & \textbf{Type} & \textbf{Description} \\
+\midrule
+hour & Integer (0--23) & Hour of day when track was played \\
+day\_of\_week & Integer (0--6) & 0=Monday, 6=Sunday \\
+month & Integer (1--12) & Month of play \\
+is\_weekend & Binary (0/1) & Whether Saturday or Sunday \\
+valence & Float (0--1) & Musical positiveness \\
+energy & Float (0--1) & Intensity \\
+danceability & Float (0--1) & Dance suitability \\
+acousticness & Float (0--1) & Acoustic confidence \\
+instrumentalness & Float (0--1) & Instrumental prediction \\
+tempo & Float & BPM \\
+loudness & Float (dB) & Overall loudness \\
+\bottomrule
+\end{tabular}
+\caption{Master dataset feature descriptions}
+\end{table}
+
+\textbf{Output}: \texttt{data/master\_dataset.csv}
+
+% ============================================================
+\section{Phase 3 — Exploratory Data Analysis}
+
+\subsection{Script: \texttt{4\_eda.py}}
+
+Generates five visualizations to understand listening patterns before modeling:
+
+\begin{enumerate}
+    \item \textbf{Correlation Heatmap}: Shows relationships between audio features (e.g., energy vs. acousticness are typically negatively correlated)
+    \item \textbf{Hourly Trends}: Average energy and valence by hour of day — reveals daily mood cycles
+    \item \textbf{Energy Heatmap}: Day-of-week $\times$ hour matrix showing when high-energy listening peaks occur
+    \item \textbf{Feature Distributions}: Histograms of each audio feature to check for skew or bimodality
+    \item \textbf{Top Artists}: Most-listened artists by scrobble count
+\end{enumerate}
+
+These plots inform clustering decisions (e.g., whether tempo has enough variance to be useful as a clustering feature).
+
+% ============================================================
+\section{Phase 4 — Vibe Clustering (K-Means)}
+
+\subsection{Script: \texttt{5\_clustering.py}}
+
+\subsubsection{Feature Scaling}
+All 7 audio features are standardized using \texttt{StandardScaler} (zero mean, unit variance) before clustering, since K-Means is distance-based and sensitive to feature scales.
+
+\subsubsection{Choosing $k$ — Elbow Method}
+We evaluate $k \in \{2, 3, \ldots, 9\}$ and plot inertia (within-cluster sum of squares) vs. $k$. The ``elbow'' point where diminishing returns begin suggests the optimal number of clusters. We default to $k=5$, which typically produces interpretable vibes.
+
+\subsubsection{Cluster Naming}
+Clusters are automatically named based on their centroid feature profiles using heuristic rules:
+
+\begin{itemize}
+    \item \textbf{Party Mode}: High energy + high valence + high danceability
+    \item \textbf{Peak Energy}: High energy + high valence (not dance-focused)
+    \item \textbf{Chill Vibes}: High acousticness + low energy
+    \item \textbf{Deep Focus}: High instrumentalness
+    \item \textbf{Wind-down}: Low valence + low energy
+\end{itemize}
+
+\subsubsection{Visualization}
+PCA reduces the 7-dimensional feature space to 2 dimensions for scatter plot visualization, with each cluster colored differently. The explained variance ratio is displayed on axis labels to show how much information the projection retains.
+
+\textbf{Outputs}:
+\begin{itemize}
+    \item \texttt{data/clustered\_dataset.csv} — Master dataset with vibe labels
+    \item \texttt{models/kmeans.pkl} — Trained K-Means model
+    \item \texttt{models/scaler.pkl} — Fitted StandardScaler
+\end{itemize}
+
+% ============================================================
+\section{Phase 5 — LSTM Vibe Forecasting}
+
+\subsection{Script: \texttt{6\_train\_lstm.py}}
+
+\subsubsection{Sequence Construction}
+The LSTM operates on fixed-length sequences of historical listening events. For each position $i$ in the chronologically-sorted dataset, we construct:
+
+$$X_i = \begin{bmatrix} \text{vibe\_id}_{i} & \text{hour}_{i} & \text{dow}_{i} & \text{weekend}_{i} \\ \vdots & \vdots & \vdots & \vdots \\ \text{vibe\_id}_{i+L-1} & \text{hour}_{i+L-1} & \text{dow}_{i+L-1} & \text{weekend}_{i+L-1} \end{bmatrix}$$
+
+$$y_i = \text{vibe\_id}_{i+L}$$
+
+where $L = 20$ is the sequence length (configurable via \texttt{SEQ\_LEN}).
+
+\subsubsection{Model Architecture}
+
+\begin{verbatim}
+Input (SEQ_LEN × 4)
+    |
+LSTM(64, return_sequences=True)
+    |
+Dropout(0.2)
+    |
+LSTM(32)
+    |
+Dropout(0.2)
+    |
+Dense(NUM_CLASSES, softmax)
+\end{verbatim}
+
+\begin{itemize}
+    \item \textbf{Two-layer LSTM}: First layer returns sequences to allow the second LSTM layer to process temporal dependencies at a higher abstraction level
+    \item \textbf{Dropout (20\%)}: Regularization to prevent overfitting on the training sequences
+    \item \textbf{Softmax output}: Produces probability distribution over all vibe classes
+    \item \textbf{Loss}: Sparse categorical cross-entropy (labels are integers, not one-hot)
+    \item \textbf{Optimizer}: Adam with default learning rate
+\end{itemize}
+
+\subsubsection{Training Strategy}
+\begin{itemize}
+    \item \textbf{No shuffle}: Data is split 80/20 chronologically (not randomly) to respect temporal ordering — the model should predict future vibes from past data, not interpolate
+    \item \textbf{30 epochs, batch size 32}: Standard starting configuration
+    \item Training and validation curves are plotted to monitor overfitting
+\end{itemize}
+
+\textbf{Outputs}:
+\begin{itemize}
+    \item \texttt{models/lstm\_vibe.h5} — Trained LSTM model
+    \item \texttt{models/label\_encoder.pkl} — Vibe label encoder
+\end{itemize}
+
+% ============================================================
+\section{Phase 6 — Prediction Engine}
+
+\subsection{Script: \texttt{7\_predict.py}}
+
+The prediction pipeline at inference time:
+
+\begin{enumerate}
+    \item Load the last $L=20$ scrobbles from the clustered dataset
+    \item Encode their vibe labels to integer IDs
+    \item Pack each into a feature vector $[\text{vibe\_id}, \text{hour}, \text{dow}, \text{weekend}]$
+    \item Feed the sequence into the LSTM
+    \item Output: probability distribution over all vibe classes
+    \item Report the top vibe and its confidence percentage
+\end{enumerate}
+
+The output includes a visual bar chart in the terminal showing all vibe probabilities, making it easy to see the full distribution.
+
+% ============================================================
+\section{Phase 7 — Streamlit Dashboard}
+
+\subsection{Script: \texttt{app.py}}
+
+The interactive dashboard provides four main views:
+
+\begin{enumerate}
+    \item \textbf{Current Vibe Prediction}: Real-time prediction with confidence metric and probability bar chart
+    \item \textbf{Weekly Heatmap}: Day $\times$ hour matrix showing the most common vibe cluster at each time slot (Plotly \texttt{imshow})
+    \item \textbf{Cluster Profiles}: Grouped bar chart comparing mean audio features across all vibe clusters
+    \item \textbf{Distribution Views}: Pie chart of overall vibe distribution and hourly listening activity
+\end{enumerate}
+
+Models are cached using \texttt{@st.cache\_resource} to avoid reloading on each interaction.
+
+\textbf{Run}: \texttt{streamlit run app.py}
+
+% ============================================================
+\section{Project Structure}
+
+\begin{verbatim}
+test1/
+├── .env.template          # API credential template
+├── requirements.txt       # Python dependencies
+├── fm_data.csv           # Existing Last.fm export (input)
+├── 1_extract_lastfm.py   # Phase 1: Fetch from Last.fm API
+├── 1b_convert_existing_data.py  # Phase 1: Convert existing CSV
+├── 2_fetch_audio_features.py    # Phase 1: Spotify enrichment
+├── 3_build_dataset.py    # Phase 2: Feature engineering
+├── 4_eda.py              # Phase 3: Exploratory analysis
+├── 5_clustering.py       # Phase 4: K-Means clustering
+├── 6_train_lstm.py       # Phase 5: LSTM training
+├── 7_predict.py          # Phase 6: CLI prediction
+├── app.py                # Phase 7: Streamlit dashboard
+├── data/                 # Generated data files
+│   ├── scrobbles.csv
+│   ├── audio_features.csv
+│   ├── master_dataset.csv
+│   └── clustered_dataset.csv
+├── models/               # Trained model artifacts
+│   ├── kmeans.pkl
+│   ├── scaler.pkl
+│   ├── label_encoder.pkl
+│   └── lstm_vibe.h5
+├── plots/                # Generated visualizations
+│   ├── correlation.png
+│   ├── hourly_trends.png
+│   ├── energy_heatmap.png
+│   ├── feature_distributions.png
+│   ├── top_artists.png
+│   ├── elbow.png
+│   ├── clusters_pca.png
+│   ├── cluster_profiles.png
+│   └── training_history.png
+└── docs/
+    └── implementation_report.tex
+\end{verbatim}
+
+% ============================================================
+\section{Execution Order}
+
+Scripts must be run in sequence, as each depends on the output of previous steps:
+
+\begin{enumerate}
+    \item \texttt{1\_extract\_lastfm.py} (or \texttt{1b\_convert\_existing\_data.py})
+    \item \texttt{2\_fetch\_audio\_features.py}
+    \item \texttt{3\_build\_dataset.py}
+    \item \texttt{4\_eda.py}
+    \item \texttt{5\_clustering.py}
+    \item \texttt{6\_train\_lstm.py}
+    \item \texttt{7\_predict.py} (standalone) or \texttt{streamlit run app.py}
+\end{enumerate}
+
+% ============================================================
+\section{Known Limitations \& Future Work}
+
+\subsection{Current Limitations}
+\begin{itemize}
+    \item \textbf{Spotify API dependency}: Audio features require Spotify to find matching tracks — unmatched tracks are dropped, reducing dataset size
+    \item \textbf{Static prediction context}: The model uses the last 20 historical scrobbles, not real-time streaming data
+    \item \textbf{Cluster naming heuristic}: Automatic naming may not always produce intuitive labels — manual inspection of centroids recommended
+    \item \textbf{Data sparsity}: LSTM performance degrades with fewer than $\sim$5,000 scrobbles (sequence diversity is insufficient)
+\end{itemize}
+
+\subsection{Potential Improvements}
+\begin{itemize}
+    \item Add weather/calendar context features for richer temporal modeling
+    \item Use Transformer architecture instead of LSTM for longer-range dependencies
+    \item Implement online learning to update the model as new scrobbles arrive
+    \item Add song recommendation within the predicted vibe cluster
+    \item Deploy as a persistent web service with scheduled data updates
+\end{itemize}
+
+% ============================================================
+\section{Conclusion}
+
+This test implementation demonstrates a complete end-to-end pipeline from raw listening data to interactive vibe prediction. The K-Means clustering successfully separates songs into interpretable mood categories based on Spotify's audio features, and the LSTM model captures temporal patterns in listening behavior.
+
+The Streamlit dashboard provides an accessible interface for exploring predictions and listening patterns. This exploratory test validates the overall approach and identifies areas for refinement before a production deployment.
+
+\end{document}
