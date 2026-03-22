@@ -1,0 +1,83 @@
+\contentsline {section}{\numberline {1}Motivation: Why Move Beyond Play Count?}{2}{section.1}%
+\contentsline {section}{\numberline {2}The ``Listening Vibes'' Framework}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}What Are Vibes?}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Proposed Vibe Definitions}{2}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Primary Vibes (Time-of-Day)}{2}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Compound Vibes (Day + Time)}{3}{subsubsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.3}What Makes Vibes Analytically Powerful?}{3}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Vibes as a Time Series}{3}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}Vibe Composition Plot (Stacked Area)}{3}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Vibe Volume Plot (Absolute Counts)}{3}{subsubsection.2.4.2}%
+\contentsline {subsubsection}{\numberline {2.4.3}Machine Learning Approach for Vibes}{4}{subsubsection.2.4.3}%
+\contentsline {paragraph}{Forecasting vibe proportions.}{4}{section*.2}%
+\contentsline {paragraph}{Classifying vibes from artist/track features.}{4}{section*.3}%
+\contentsline {section}{\numberline {3}Listening Diversity Index (Shannon Entropy)}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}What It Measures}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Normalized Entropy}{5}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Time Series Plot}{5}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Cross with Vibes}{5}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Machine Learning Approach}{5}{subsection.3.5}%
+\contentsline {paragraph}{Forecasting diversity.}{5}{section*.4}%
+\contentsline {paragraph}{Anomaly detection.}{5}{section*.5}%
+\contentsline {section}{\numberline {4}New Artist Discovery Rate}{6}{section.4}%
+\contentsline {subsection}{\numberline {4.1}What It Measures}{6}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Cumulative Discovery Curve}{6}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Time Series Plot}{6}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Cross with Vibes}{6}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Machine Learning Approach}{6}{subsection.4.5}%
+\contentsline {paragraph}{Forecasting discovery rate.}{6}{section*.6}%
+\contentsline {paragraph}{Classification: Will the user discover a new artist today?}{7}{section*.7}%
+\contentsline {section}{\numberline {5}Artist Rank Dynamics (Personal Billboard Chart)}{7}{section.5}%
+\contentsline {subsection}{\numberline {5.1}What It Measures}{7}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Time Series Plot}{7}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Machine Learning Approach}{7}{subsection.5.3}%
+\contentsline {paragraph}{Rank forecasting.}{7}{section*.8}%
+\contentsline {paragraph}{Detecting rank change events.}{7}{section*.9}%
+\contentsline {section}{\numberline {6}Listening Session Analysis}{8}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Defining a Session}{8}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Session-Level Metrics}{8}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Time Series Plots}{8}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Machine Learning Approach}{8}{subsection.6.4}%
+\contentsline {paragraph}{Forecasting session characteristics.}{8}{section*.10}%
+\contentsline {paragraph}{Session type classification.}{9}{section*.11}%
+\contentsline {section}{\numberline {7}Loyalty Score}{9}{section.7}%
+\contentsline {subsection}{\numberline {7.1}What It Measures}{9}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Time Series Plot}{9}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Relationship to Diversity}{9}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Machine Learning Approach}{9}{subsection.7.4}%
+\contentsline {section}{\numberline {8}Seasonal and Cyclical Patterns}{10}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Weekly Cycles}{10}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Artist Seasonality Heatmap}{10}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Hourly Distribution (Listening Clock)}{10}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Machine Learning Approach}{10}{subsection.8.4}%
+\contentsline {paragraph}{Fourier features for SARIMAX.}{10}{section*.12}%
+\contentsline {paragraph}{Facebook Prophet.}{10}{section*.13}%
+\contentsline {section}{\numberline {9}Track Repeat Intensity}{11}{section.9}%
+\contentsline {subsection}{\numberline {9.1}What It Measures}{11}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Time Series Plot}{11}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Machine Learning Approach}{11}{subsection.9.3}%
+\contentsline {section}{\numberline {10}Artist Lifespan Analysis}{11}{section.10}%
+\contentsline {subsection}{\numberline {10.1}What It Measures}{11}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Visualisation}{11}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Machine Learning Approach}{12}{subsection.10.3}%
+\contentsline {paragraph}{Predicting artist longevity.}{12}{section*.14}%
+\contentsline {section}{\numberline {11}Listening Gap Analysis}{12}{section.11}%
+\contentsline {subsection}{\numberline {11.1}What It Measures}{12}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Time Series Plot}{12}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}Machine Learning Approach}{12}{subsection.11.3}%
+\contentsline {section}{\numberline {12}Rolling Unique Artist Count}{12}{section.12}%
+\contentsline {subsection}{\numberline {12.1}What It Measures}{12}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Time Series Plot}{13}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Machine Learning Approach}{13}{subsection.12.3}%
+\contentsline {section}{\numberline {13}Multi-User Comparative Analysis}{13}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Possible Comparisons}{13}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Machine Learning Approach}{13}{subsection.13.2}%
+\contentsline {paragraph}{User clustering.}{13}{section*.15}%
+\contentsline {paragraph}{User-level forecasting.}{13}{section*.16}%
+\contentsline {section}{\numberline {14}Comprehensive Summary of All Possibilities}{13}{section.14}%
+\contentsline {section}{\numberline {15}Recommended Priority Order}{14}{section.15}%
+\contentsline {section}{\numberline {16}Constraints and Considerations}{15}{section.16}%
+\contentsline {subsection}{\numberline {16.1}Limited Time Span (31 Days)}{15}{subsection.16.1}%
+\contentsline {subsection}{\numberline {16.2}Data Granularity}{15}{subsection.16.2}%
+\contentsline {subsection}{\numberline {16.3}Missing Genre Information}{15}{subsection.16.3}%
+\contentsline {section}{\numberline {17}Conclusion}{16}{section.17}%

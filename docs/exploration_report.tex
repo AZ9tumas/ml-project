@@ -1,0 +1,1007 @@
+\documentclass[12pt, a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{parskip}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+
+% ── Colours ───────────────────────────────────────────────────────────────────
+\definecolor{vibeblue}{RGB}{70,130,180}
+\definecolor{vibeorange}{RGB}{230,126,34}
+\definecolor{vibegreen}{RGB}{39,174,96}
+\definecolor{vibepurple}{RGB}{142,68,173}
+\definecolor{vibered}{RGB}{192,57,43}
+
+% ── Header / Footer ──────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Beyond Play Count --- Advanced Analysis Possibilities}
+\lhead{ML Project --- Exploration Report}
+\cfoot{\thepage}
+
+% ── Title ─────────────────────────────────────────────────────────────────────
+\title{
+    \vspace{-1cm}
+    \textbf{Beyond Play Count:\\
+    Exploring Advanced Time Series Analyses\\
+    and ``Listening Vibes'' for Music Data}\\[0.5em]
+    \large An In-Depth Exploration of Possibilities, Metrics,\\
+    and Machine Learning Approaches Using \texttt{fm\_data.csv}
+}
+\author{ML Project Team}
+\date{\today}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+The initial project report established a baseline approach: aggregating
+Last.fm scrobble data into daily play counts and forecasting them with
+SARIMA. While effective as a starting point, raw play count is the
+\emph{least informative} metric we can extract from the data. This document
+explores a rich landscape of alternative analyses --- from defining temporal
+``listening vibes'' (clusters of songs based on when they were played) to
+computing diversity indices, discovery rates, loyalty scores, and session
+dynamics. For each possibility, we discuss what the metric captures, how it
+would be constructed from \texttt{fm\_data.csv}, what time series plots it
+enables, and which machine learning models are most suitable for forecasting
+or classification. No code is included; the focus is purely on conceptual
+exploration and modelling strategy.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Motivation: Why Move Beyond Play Count?}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Daily play count answers a single question: \emph{How much did the user
+listen?} But it says nothing about:
+
+\begin{itemize}
+    \item \textbf{When} they listened (morning vs.\ late night),
+    \item \textbf{What} they listened to (one artist on repeat vs.\ dozens),
+    \item \textbf{How} they listened (short background sessions vs.\ long
+          focused ones),
+    \item \textbf{Whether} they were exploring new music or revisiting
+          favourites.
+\end{itemize}
+
+Our dataset contains \textbf{Username, Artist, Track, Album, Date, and Time}
+for 166{,}153 scrobbles across 11 users over 31 days. This is far richer
+than a single count. The following sections explore every meaningful metric
+and analysis we can extract from it.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{The ``Listening Vibes'' Framework}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What Are Vibes?}
+
+A \textbf{vibe} is a temporal cluster --- a named time window defined by
+when a scrobble occurred. The hypothesis is simple: \emph{people listen to
+different kinds of music at different times, and these temporal slots carry
+distinct emotional and behavioural signatures.}
+
+Rather than treating time as a raw number (hour 0--23), we assign each
+scrobble to a meaningful, human-interpretable category.
+
+\subsection{Proposed Vibe Definitions}
+
+We propose two tiers of vibes: \textbf{primary} (based on time of day) and
+\textbf{compound} (combining day of week with time of day).
+
+\subsubsection{Primary Vibes (Time-of-Day)}
+
+\begin{center}
+\begin{tabular}{llp{6.5cm}}
+    \toprule
+    \textbf{Vibe} & \textbf{Hours} & \textbf{Behavioural Hypothesis} \\
+    \midrule
+    Early Morning  & 05:00--08:59 & Wake-up routines, commute music.
+                                    Likely energetic or habitual. \\
+    Morning        & 09:00--11:59 & Focus and productivity.
+                                    Instrumental, ambient, or familiar. \\
+    Afternoon      & 12:00--16:59 & Midday energy. Mixed genres,
+                                    background listening. \\
+    Evening        & 17:00--20:59 & Wind-down or social.
+                                    More intentional, curated listening. \\
+    Late Night     & 21:00--00:59 & Reflective, moody, or intense.
+                                    Deeper engagement. \\
+    Deep Night     & 01:00--04:59 & Insomnia or marathon sessions.
+                                    Niche, experimental. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Compound Vibes (Day + Time)}
+
+\begin{center}
+\begin{tabular}{llp{6.5cm}}
+    \toprule
+    \textbf{Vibe} & \textbf{Definition} & \textbf{Behavioural Hypothesis} \\
+    \midrule
+    Weekend Vibes   & Sat--Sun, any time  & Leisure listening, longer
+                                            sessions, more exploration. \\
+    Weekday Grind   & Mon--Fri, 09--17    & Work-time music, focus-oriented,
+                                            lower diversity. \\
+    Friday Night     & Fri 18:00 -- Sat 03:00 & Social, party, high-energy
+                                                or celebratory. \\
+    Sunday Chill     & Sun, all day        & Recovery, mellow, singer-songwriter,
+                                            acoustic. \\
+    Monday Morning   & Mon, 05:00--11:59   & Re-entry to the work week,
+                                            motivational or comforting. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{What Makes Vibes Analytically Powerful?}
+
+Vibes are not arbitrary labels --- they are \textbf{categorical features}
+that enable a fundamentally new type of analysis. Once every scrobble is
+tagged with a vibe, we can:
+
+\begin{enumerate}
+    \item \textbf{Compare distributions}: Which artists or tracks dominate
+          each vibe? Do Late Night and Morning vibes share any overlap?
+    \item \textbf{Track vibe proportions over time}: Plot the percentage of
+          each vibe per week as a stacked area chart. This reveals
+          behavioural shifts (e.g.\ a user gradually becoming a night
+          listener).
+    \item \textbf{Cross vibes with other metrics}: Compute diversity,
+          discovery rate, or loyalty score \emph{within each vibe
+          separately}. This is far more revealing than global metrics.
+    \item \textbf{Use vibes as features in ML models}: Pass vibe proportions
+          as exogenous variables to forecasting models.
+\end{enumerate}
+
+\subsection{Vibes as a Time Series}
+
+\subsubsection{Vibe Composition Plot (Stacked Area)}
+For each time unit (day or week), compute the proportion of scrobbles falling
+into each vibe. Plotted as a \textbf{stacked area chart}, this shows how the
+user's daily rhythm evolves over the 31-day window.
+
+\textbf{What to look for}:
+\begin{itemize}
+    \item Do weekends consistently show a different vibe mix?
+    \item Are there days where Late Night and Deep Night vibes spike
+          (suggesting binge sessions)?
+    \item Does the vibe composition remain stable, or does it drift over
+          the month?
+\end{itemize}
+
+\subsubsection{Vibe Volume Plot (Absolute Counts)}
+Instead of proportions, plot the raw number of scrobbles per vibe per day.
+This combines the ``how much'' of play count with the ``when'' of vibes,
+giving a much richer picture.
+
+\subsubsection{Machine Learning Approach for Vibes}
+
+\paragraph{Forecasting vibe proportions.}
+Each day produces a vector of vibe proportions
+$\mathbf{v}_t = (v_t^{\text{morning}}, v_t^{\text{afternoon}}, \ldots)$.
+This is a \textbf{compositional time series} (proportions that sum to 1).
+
+\begin{itemize}
+    \item \textbf{Vector Autoregression (VAR)}: Treats each vibe proportion
+          as one variable in a multivariate time series. VAR captures
+          cross-correlations --- e.g.\ a spike in Late Night today might
+          predict a drop in Early Morning tomorrow.
+    \item \textbf{Dirichlet Regression}: Since vibes are compositional
+          (proportions summing to 1), Dirichlet regression is the
+          theoretically correct model. It respects the simplex constraint
+          and avoids the problems of modelling proportions independently.
+    \item \textbf{LSTM / GRU}: A recurrent neural network that takes the
+          vibe vector $\mathbf{v}_{t-k}, \ldots, \mathbf{v}_{t-1}$ as input
+          and predicts $\mathbf{v}_t$. Captures non-linear temporal
+          dependencies. Suitable if the dataset is extended beyond 31 days.
+\end{itemize}
+
+\paragraph{Classifying vibes from artist/track features.}
+Given a scrobble's artist and track (but \emph{not} its timestamp), can we
+predict which vibe it belongs to? This asks: \emph{Is there a systematic
+relationship between what someone listens to and when they listen?}
+
+\begin{itemize}
+    \item \textbf{Features}: Artist frequency encoding, track repeat count,
+          album dummy variables, or artist embeddings from SVD.
+    \item \textbf{Models}: Multinomial logistic regression (baseline),
+          random forest, gradient-boosted trees (XGBoost/LightGBM).
+    \item \textbf{Evaluation}: Multi-class accuracy, macro F1 score,
+          confusion matrix between vibes.
+    \item \textbf{Insight}: If accuracy is significantly above random
+          ($\sim$16--20\% for 5--6 vibes), this proves that listening
+          content is predictive of listening time --- people do have
+          ``morning artists'' and ``night artists.''
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Listening Diversity Index (Shannon Entropy)}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+The \textbf{Shannon entropy} of a user's listening distribution measures how
+\emph{varied} or \emph{uniform} their artist choices are within a given
+time window. It answers: \emph{Is the user exploring many artists equally,
+or obsessively replaying one?}
+
+\[
+    H(t) = -\sum_{i=1}^{N_t} p_i(t) \log_2 p_i(t)
+\]
+
+where $p_i(t)$ is the proportion of plays for artist $i$ in time window $t$,
+and $N_t$ is the number of distinct artists.
+
+\begin{itemize}
+    \item $H = 0$: The user listened to exactly one artist (zero diversity).
+    \item $H = \log_2 N$: The user listened to all $N$ artists equally
+          (maximum diversity).
+\end{itemize}
+
+\subsection{Normalized Entropy}
+
+To compare across time windows with different numbers of artists, we
+normalise:
+\[
+    H_{\text{norm}}(t) = \frac{H(t)}{\log_2 N_t} \in [0, 1]
+\]
+
+A value of 0.8 means the user is using 80\% of the available diversity.
+
+\subsection{Time Series Plot}
+
+Compute $H(t)$ weekly (or daily) and plot it over the 31-day window. This
+reveals:
+\begin{itemize}
+    \item \textbf{Exploration phases}: Periods where $H$ rises sharply ---
+          the user is sampling many new artists.
+    \item \textbf{Obsession phases}: Periods where $H$ drops --- the user
+          found something they love and is playing it on repeat.
+    \item \textbf{Weekday/weekend patterns}: Diversity might systematically
+          differ between work days and free days.
+\end{itemize}
+
+\subsection{Cross with Vibes}
+
+Compute entropy \emph{separately for each vibe}. This answers questions like:
+\begin{itemize}
+    \item Are Late Night sessions more diverse than Morning sessions?
+    \item Do Weekend Vibes have higher entropy than Weekday Grind?
+    \item Does the user always listen to the same artist at a particular
+          time, but explore at another?
+\end{itemize}
+
+\subsection{Machine Learning Approach}
+
+\paragraph{Forecasting diversity.}
+$H(t)$ is a univariate continuous time series --- any standard time series
+model applies.
+
+\begin{itemize}
+    \item \textbf{SARIMA}: Directly applicable. Seasonal period of 7 if
+          weekly cycles exist in diversity.
+    \item \textbf{SARIMAX with exogenous variables}: Use play count,
+          vibe proportions, and day-of-week as exogenous regressors to
+          predict diversity. This asks: \emph{Can we forecast how varied
+          someone's listening will be based on when and how much they
+          listen?}
+    \item \textbf{Random Forest Regressor}: For non-linear relationships.
+          Input features: lagged entropy values, day of week, total plays,
+          number of unique artists in the previous $k$ days.
+\end{itemize}
+
+\paragraph{Anomaly detection.}
+Sudden drops in diversity (obsession events) or spikes (exploration bursts)
+are anomalies. An \textbf{Isolation Forest} or \textbf{autoencoder} trained
+on normal diversity patterns could flag unusual listening behaviour.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{New Artist Discovery Rate}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+For each scrobble, we can check whether the artist has \emph{ever been
+played before} by that user (up to that point in time). This yields two
+metrics:
+
+\begin{enumerate}
+    \item \textbf{New artists per day/week}: The absolute count of
+          first-ever artist listens within the time window.
+    \item \textbf{Discovery rate}: The fraction of scrobbles in a time
+          window that feature a never-before-heard artist.
+\end{enumerate}
+
+\subsection{Cumulative Discovery Curve}
+
+The running total of unique artists over time follows a characteristic shape:
+\begin{itemize}
+    \item \textbf{Early}: Steep rise (most artists are ``new'').
+    \item \textbf{Later}: Flattening curve (the user has heard most of their
+          rotation).
+\end{itemize}
+
+The \emph{rate of flattening} reveals whether the user's taste is saturating
+or still actively growing. Over a longer dataset, this curve typically
+follows \textbf{Heaps' law}: $V(n) \approx K \cdot n^\beta$ where
+$V(n)$ is the vocabulary (unique artists) after $n$ plays, and $\beta < 1$.
+
+\subsection{Time Series Plot}
+
+Plot the daily discovery rate as a line chart with a rolling average overlay.
+Spikes indicate days where the user actively sought out new music; troughs
+indicate comfort-listening days.
+
+\subsection{Cross with Vibes}
+
+Compute the discovery rate separately per vibe. This answers:
+\begin{itemize}
+    \item \emph{Do users discover new music more during Late Night sessions
+          or during Weekend Vibes?}
+    \item \emph{Is the Weekday Grind purely repetitive, or does it also
+          introduce new artists?}
+\end{itemize}
+
+\subsection{Machine Learning Approach}
+
+\paragraph{Forecasting discovery rate.}
+This is another univariate time series, but with a particular characteristic:
+it tends to \textbf{decrease over time} as the user accumulates more known
+artists.
+
+\begin{itemize}
+    \item \textbf{SARIMA with trend}: The $d$ parameter in ARIMA handles
+          the decreasing trend. A model of $(1,1,1)(1,0,1,7)$ could work.
+    \item \textbf{Exponential smoothing (ETS)}: Suitable for data with a
+          decaying trend. A damped trend model (ETS with
+          $\text{trend}=\text{damped}$) would naturally capture the
+          flattening behaviour.
+    \item \textbf{Poisson regression}: Since ``new artists per day'' is a
+          count, a Poisson or negative binomial regression with time and
+          vibe features as regressors is statistically appropriate.
+\end{itemize}
+
+\paragraph{Classification: Will the user discover a new artist today?}
+Binary: yes/no, at least one new artist. Features: day of week, vibe
+distribution of previous days, recent entropy, cumulative unique count so
+far. Model: logistic regression or gradient-boosted classifier.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Artist Rank Dynamics (Personal Billboard Chart)}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+For each time window (day or week), rank the user's top $N$ artists by play
+count. Track how these ranks change over time --- like a personal Billboard
+Hot 100.
+
+\subsection{Time Series Plot}
+
+A \textbf{bump chart} (ranked line chart with inverted $y$-axis: rank 1 at
+top). Each artist is a coloured line. Lines crossing each other show
+taste evolution.
+
+\textbf{What to look for}:
+\begin{itemize}
+    \item \textbf{Stable monarchs}: Artists that hold rank 1 consistently.
+    \item \textbf{Meteoric rises}: An artist suddenly jumping from unranked
+          to top 3 (a new obsession).
+    \item \textbf{Fadeouts}: Artists dropping out of the top $N$ over time
+          (novelty wearing off).
+\end{itemize}
+
+\subsection{Machine Learning Approach}
+
+\paragraph{Rank forecasting.}
+Predicting an artist's rank next week given their recent trajectory.
+
+\begin{itemize}
+    \item \textbf{Ordinal regression}: Ranks are ordinal --- standard
+          regression treats the difference between rank 1 and 2 the same as
+          between rank 10 and 11, which is not ideal. Ordinal regression
+          preserves the ordering without assuming equal spacing.
+    \item \textbf{Learning-to-rank (LTR)}: Algorithms like
+          \textbf{LambdaMART} (used in search engine ranking) can learn to
+          predict artist rankings from features like recent play counts,
+          trajectory direction, and consistency.
+    \item \textbf{Per-artist ARIMA}: Fit a separate ARIMA model to each
+          artist's daily play count, then rank the resulting forecasts. This
+          is a simple but effective decomposition.
+\end{itemize}
+
+\paragraph{Detecting rank change events.}
+A \textbf{change-point detection} algorithm (e.g.\ PELT, BOCPD) applied to
+each artist's play count series can identify the exact day a new obsession
+began or an old favourite faded.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Listening Session Analysis}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Defining a Session}
+
+A \textbf{listening session} is a continuous period of listening activity.
+We define a session boundary as a gap of more than 30 minutes between
+consecutive scrobbles. Every scrobble within a session belongs to the same
+session ID.
+
+\subsection{Session-Level Metrics}
+
+From each session we can extract:
+
+\begin{center}
+\begin{tabular}{lp{8.5cm}}
+    \toprule
+    \textbf{Metric} & \textbf{Description} \\
+    \midrule
+    Duration (minutes) & Time from first to last scrobble in the session. \\
+    Track count        & Number of songs played in the session. \\
+    Unique artists     & Number of distinct artists in the session. \\
+    Artist entropy     & Shannon diversity within the session. \\
+    Repeat ratio       & Fraction of tracks that are repeats within
+                         the session. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Time Series Plots}
+
+Aggregate session-level metrics daily or weekly:
+\begin{itemize}
+    \item \textbf{Average session duration over time}: Reveals whether the
+          user is engaging in longer or shorter listening blocks.
+    \item \textbf{Sessions per day}: Distinguishes between ``many short
+          sessions'' and ``few long sessions'' --- both could produce the
+          same raw play count but indicate very different behaviour.
+    \item \textbf{Average tracks per session}: A decreasing trend might
+          indicate declining engagement; an increasing trend suggests
+          deeper listening.
+    \item \textbf{Average unique artists per session}: Measures within-session
+          exploration. A session with 20 tracks from 1 artist is very
+          different from 20 tracks from 15 artists.
+\end{itemize}
+
+\subsection{Machine Learning Approach}
+
+\paragraph{Forecasting session characteristics.}
+Each daily aggregate (e.g.\ mean session duration) is a time series that can
+be modelled independently.
+
+\begin{itemize}
+    \item \textbf{SARIMA / ETS}: For the aggregate metrics (mean duration,
+          session count per day).
+    \item \textbf{Multivariate VAR}: Model all session metrics jointly.
+          Session count, mean duration, and mean diversity are likely
+          correlated --- a day with many sessions might have shorter average
+          duration.
+    \item \textbf{Gaussian Process Regression}: For smooth, uncertainty-aware
+          forecasts of session metrics with limited data (31 days). GPs
+          naturally handle small datasets and provide confidence intervals.
+\end{itemize}
+
+\paragraph{Session type classification.}
+Cluster sessions into types: ``background listening'' (long, low diversity,
+one artist), ``active exploration'' (many unique artists, high entropy),
+``party mode'' (Friday night, high energy). Then track how the proportion
+of session types changes over time --- this is itself a compositional
+time series (similar to vibe proportions).
+
+\begin{itemize}
+    \item \textbf{K-Means / Gaussian Mixture Models}: On the feature vector
+          (duration, track count, unique artists, entropy, repeat ratio) to
+          discover natural session types.
+    \item \textbf{Hidden Markov Model (HMM)}: Model the user as transitioning
+          between latent ``listening states'' (background, active, binge).
+          The HMM captures the temporal dynamics of transitions between
+          session types --- e.g.\ a binge session is more likely to follow
+          another binge session than to follow a background session.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Loyalty Score}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+The \textbf{loyalty score} is the percentage of a user's plays in a time
+window that go to their all-time top $K$ artists (e.g.\ $K = 10$):
+
+\[
+    L(t) = \frac{\text{plays of top-}K\text{ artists in window } t}
+                {\text{total plays in window } t} \times 100
+\]
+
+\begin{itemize}
+    \item $L = 100\%$: The user exclusively listens to their favourites.
+    \item $L \approx 0\%$: The user is entirely outside their usual rotation.
+\end{itemize}
+
+\subsection{Time Series Plot}
+
+Plot $L(t)$ daily with a filled area chart. Overlay a horizontal reference
+line at 50\%. Periods above 50\% are ``loyal'' phases; periods below are
+``adventurous'' phases.
+
+\subsection{Relationship to Diversity}
+
+Loyalty and diversity are \textbf{inversely related} but not identical.
+A user could have low loyalty (rarely playing top-10 artists) but also low
+diversity (obsessing over one \emph{new} artist). Together, they paint a
+more complete picture.
+
+\subsection{Machine Learning Approach}
+
+\begin{itemize}
+    \item \textbf{SARIMA}: Loyalty is bounded (0--100\%) but often stays
+          in the 20--80\% range, so SARIMA works well in practice.
+    \item \textbf{Beta regression}: Since $L(t)/100 \in (0,1)$ is a
+          proportion, beta regression is the statistically appropriate
+          model. Predictors: day of week, recent diversity, recent session
+          count.
+    \item \textbf{Threshold classification}: Define phases as ``loyal''
+          ($L > 60\%$) or ``exploratory'' ($L \leq 60\%$) and train a
+          classifier to predict tomorrow's phase from recent features.
+          Model: logistic regression, SVM, or a simple decision tree.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Seasonal and Cyclical Patterns}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Weekly Cycles}
+
+The most prominent cycle in listening data is the \textbf{weekly cycle}.
+With our data spanning exactly 31 days (approximately 4.4 weeks), we can
+detect weekly patterns by:
+
+\begin{enumerate}
+    \item \textbf{Day-of-week aggregation}: Average play count (and all
+          other metrics) by day of week across all weeks. Visualise as a
+          bar chart.
+    \item \textbf{Fourier analysis}: Compute the periodogram or FFT of the
+          daily time series to identify dominant frequencies. A peak at
+          frequency $f = 1/7$ confirms weekly seasonality.
+\end{enumerate}
+
+\subsection{Artist Seasonality Heatmap}
+
+For each of the top $N$ artists, compute total plays per day of week
+(aggregated across all weeks). Display as a heatmap with artists on the
+$y$-axis and days of week on the $x$-axis.
+
+\textbf{What to look for}:
+\begin{itemize}
+    \item Artists that appear exclusively on weekends.
+    \item Artists that spike on specific days (e.g.\ ``Monday motivation''
+          artists).
+    \item Uniform artists that are listened to equally every day (true
+          favourites vs.\ context-dependent artists).
+\end{itemize}
+
+\subsection{Hourly Distribution (Listening Clock)}
+
+A \textbf{radial (polar) bar chart} showing play count by hour of day,
+plotted around a 24-hour clock. Optionally split into two overlaid rings:
+weekday vs.\ weekend. This is not a time series per se, but it
+\emph{aggregates} the time series into a powerful visual summary.
+
+\subsection{Machine Learning Approach}
+
+\paragraph{Fourier features for SARIMAX.}
+Instead of relying solely on SARIMA's seasonal component, we can explicitly
+construct Fourier features:
+\[
+    \sin\!\left(\frac{2\pi k t}{7}\right), \quad
+    \cos\!\left(\frac{2\pi k t}{7}\right)
+    \qquad k = 1, 2, 3
+\]
+
+These sine/cosine pairs, passed as exogenous variables to SARIMAX, capture
+weekly patterns more flexibly than a single seasonal period.
+
+\paragraph{Facebook Prophet.}
+Prophet is designed specifically for time series with strong seasonal effects
+and multiple seasonality levels. It would model:
+\begin{itemize}
+    \item \textbf{Weekly seasonality}: Automatic weekday/weekend patterns.
+    \item \textbf{Trend}: Piecewise linear trend over the month.
+    \item \textbf{Holidays/events}: Could mark specific dates (e.g.\ New
+          Year's Day falls within our January 2021 data) as special events.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Track Repeat Intensity}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+How many times the user replays the \emph{same track} within a day or
+session. This captures the phenomenon of ``having a song on repeat'' ---
+a strong signal of emotional connection.
+
+\[
+    R(t) = \max_{\text{track } j}\left(\text{play count of } j
+           \text{ on day } t\right)
+\]
+
+Alternatively, the \textbf{average repeat count}: mean number of times each
+played track is repeated within the day.
+
+\subsection{Time Series Plot}
+
+Plot $R(t)$ daily. Spikes indicate days with obsessive replays. Cross with
+the identity of the track being repeated to tell a ``story'' of obsessions
+over time.
+
+\subsection{Machine Learning Approach}
+
+\begin{itemize}
+    \item \textbf{Poisson / Negative Binomial regression}: Repeat counts
+          are non-negative integers with possible overdispersion. A count
+          model with day-of-week and vibe features as regressors is natural.
+    \item \textbf{Zero-inflated models}: Many tracks are played exactly once.
+          A zero-inflated Poisson model handles the excess of ``no repeats''
+          entries.
+    \item \textbf{Survival analysis}: Model the ``time until an artist is
+          replayed'' using Cox proportional hazards or Kaplan--Meier
+          estimates. Artists with short replay times are ``sticky'';
+          artists with long replay times were one-hit curiosities.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Artist Lifespan Analysis}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+For each artist, compute:
+\begin{itemize}
+    \item \textbf{First listen date}: The earliest scrobble of that artist.
+    \item \textbf{Last listen date}: The most recent scrobble.
+    \item \textbf{Active span}: Last $-$ First (in days).
+    \item \textbf{Total plays within span}: How intensely the artist was
+          played during their active period.
+\end{itemize}
+
+\subsection{Visualisation}
+
+A \textbf{Gantt-style chart} with artists on the $y$-axis and time on the
+$x$-axis. Each artist gets a horizontal bar from first to last listen, with
+colour or thickness encoding play intensity. This shows which artists
+``stuck'' and which were fleeting encounters.
+
+\subsection{Machine Learning Approach}
+
+\paragraph{Predicting artist longevity.}
+Given the features of an artist's first few listens (time of day, vibe,
+number of initial plays, whether it was discovered via a binge session),
+can we predict whether the artist will still be in rotation a week later?
+
+\begin{itemize}
+    \item \textbf{Survival models}: Cox regression with features from the
+          first session. The ``event'' is the artist being dropped (no plays
+          for $> k$ days).
+    \item \textbf{Binary classification}: Will this artist be played again
+          after 7 days? Features: initial play intensity, vibe of discovery,
+          session type, diversity at time of discovery.
+    \item \textbf{Random forest / XGBoost}: For the binary classifier, with
+          feature importance analysis revealing what predicts artist
+          stickiness.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Listening Gap Analysis}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+Periods with \textbf{zero or near-zero scrobbles}: the user stopped
+listening. These gaps correspond to real-life events --- sleep, work, travel,
+social activities, or simply not being in the mood for music.
+
+\subsection{Time Series Plot}
+
+Overlay ``gap regions'' (shaded bands) on top of the standard daily play
+count chart. Alternatively, plot the \textbf{daily maximum gap duration}
+(longest silence in hours) as its own time series.
+
+\subsection{Machine Learning Approach}
+
+\begin{itemize}
+    \item \textbf{Anomaly detection}: Unusually long gaps within a period
+          where the user is normally active could flag interesting behavioural
+          changes. Isolation Forest or DBSCAN on gap durations.
+    \item \textbf{Predicting active periods}: Given the time of day and day
+          of week, predict whether the user will be listening. This is a
+          binary time series classification problem solvable with logistic
+          regression or an HMM with ``active'' and ``inactive'' states.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Rolling Unique Artist Count}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{What It Measures}
+
+A \textbf{rolling window} (e.g.\ 7 days) count of unique artists. Unlike
+instantaneous diversity (entropy), this captures the breadth of the user's
+repertoire over a sustained period. It smooths out daily fluctuations and
+reveals the underlying trend.
+
+\subsection{Time Series Plot}
+
+A smooth line chart of the 7-day rolling unique artist count. Compare it
+against the rolling play count to see if the user is listening more
+\emph{broadly} or just listening \emph{more}.
+
+\subsection{Machine Learning Approach}
+
+\begin{itemize}
+    \item \textbf{SARIMA}: Applicable to the smoothed series.
+    \item \textbf{Regression}: Predict the rolling unique count from
+          upcoming features (is a holiday approaching? Is it a weekend
+          streak?).
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Multi-User Comparative Analysis}
+% ══════════════════════════════════════════════════════════════════════════════
+
+With 11 users in the dataset, every metric above can be computed per user
+and compared.
+
+\subsection{Possible Comparisons}
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+    \toprule
+    \textbf{Comparison} & \textbf{Insight} \\
+    \midrule
+    Diversity trajectories & Which users explore more over time? Who is
+                             most set in their ways? \\
+    Vibe profiles         & Do some users listen exclusively at night while
+                             others are morning listeners? \\
+    Discovery curves      & Whose taste is saturating fastest? Who is the
+                             most adventurous? \\
+    Loyalty rankings      & Who is the most loyal listener? Who has the
+                             most scattered taste? \\
+    Session patterns      & Who listens in long focused sessions vs.\ many
+                             short bursts? \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Machine Learning Approach}
+
+\paragraph{User clustering.}
+Compute a feature vector for each user: average diversity, average loyalty,
+dominant vibe, discovery rate, session characteristics. Apply
+\textbf{K-Means} or \textbf{hierarchical clustering} to group users into
+``listener types.''
+
+\paragraph{User-level forecasting.}
+Fit a \textbf{hierarchical (multi-level) time series model} across all
+users simultaneously. Global patterns (everyone listens less on Mondays)
+inform individual forecasts, and individual-level parameters capture
+user-specific behaviour. This approach can be implemented with
+\textbf{mixed-effects models} or \textbf{global neural networks} (one LSTM
+trained on all users with user embeddings).
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Comprehensive Summary of All Possibilities}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The following table summarises every metric, its time series potential,
+and the recommended machine learning approach:
+
+\begin{center}
+\small
+\begin{tabular}{p{3.2cm}p{3cm}p{3.5cm}p{4cm}}
+    \toprule
+    \textbf{Metric} & \textbf{Time Series Type} & \textbf{Best Plot} &
+    \textbf{Recommended ML Model} \\
+    \midrule
+    Daily Play Count
+        & Univariate, integer
+        & Line chart
+        & SARIMA (baseline) \\[4pt]
+    Vibe Proportions
+        & Multivariate, compositional
+        & Stacked area chart
+        & VAR, Dirichlet regression, LSTM \\[4pt]
+    Shannon Entropy (Diversity)
+        & Univariate, continuous
+        & Line with filled area
+        & SARIMAX, Random Forest, GP \\[4pt]
+    Discovery Rate
+        & Univariate, decaying
+        & Line + rolling avg
+        & ETS (damped trend), Poisson regression \\[4pt]
+    Artist Rankings
+        & Multivariate, ordinal
+        & Bump chart
+        & Ordinal regression, LambdaMART \\[4pt]
+    Session Metrics
+        & Multivariate, continuous
+        & 2$\times$2 subplot panel
+        & VAR, Gaussian Process \\[4pt]
+    Session Types
+        & Compositional
+        & Stacked bar chart
+        & K-Means + HMM \\[4pt]
+    Loyalty Score
+        & Univariate, bounded
+        & Filled line chart
+        & Beta regression, SARIMA \\[4pt]
+    Seasonal Patterns
+        & Periodic
+        & Heatmap, polar chart
+        & Prophet, Fourier + SARIMAX \\[4pt]
+    Repeat Intensity
+        & Univariate, count
+        & Bar chart with labels
+        & Poisson / NB regression \\[4pt]
+    Artist Lifespan
+        & Non-temporal (cross-sectional)
+        & Gantt chart
+        & Survival analysis (Cox) \\[4pt]
+    Listening Gaps
+        & Univariate, duration
+        & Shaded overlay
+        & Isolation Forest, HMM \\[4pt]
+    Rolling Unique Artists
+        & Univariate, smooth
+        & Smooth line chart
+        & SARIMA, regression \\[4pt]
+    User Clusters
+        & Cross-sectional
+        & Scatter / radar chart
+        & K-Means, hierarchical \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Recommended Priority Order}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Given the constraints of the dataset (31 days, 11 users), some analyses are
+more feasible and impactful than others. We recommend the following priority:
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item \textbf{Vibe Composition Over Time} --- The most novel and visually
+          compelling analysis. Directly builds on existing feature
+          engineering. Enables all downstream cross-analyses.
+
+    \item \textbf{Shannon Diversity Index} --- Conceptually rich, easy to
+          compute, and produces a beautiful time series that tells a
+          psychological story about each user.
+
+    \item \textbf{Discovery Rate} --- Natural complement to diversity.
+          Together, diversity + discovery fully characterise the
+          ``exploration vs.\ exploitation'' behaviour.
+
+    \item \textbf{Session Analysis} --- Adds a dimension no other metric
+          captures: \emph{how} the user engages (deep sessions vs.\
+          scattered plays).
+
+    \item \textbf{Loyalty Score} --- Quick to compute, intuitive, and
+          works as a high-level summary of taste stability.
+
+    \item \textbf{Artist Rank Chart} --- Visually distinctive (bump chart),
+          tells individual artist ``stories,'' and is immediately
+          understandable.
+
+    \item \textbf{Seasonal Heatmap and Listening Clock} --- Best for
+          presentation slides. Not a time series per se, but essential for
+          understanding the data.
+
+    \item \textbf{Track Repeat Intensity and Artist Lifespan} --- More
+          specialised but still interesting. Implement if time allows.
+
+    \item \textbf{Multi-User Comparison} --- A natural final chapter,
+          applying all the above across the 11 users to find listener
+          archetypes.
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Constraints and Considerations}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Limited Time Span (31 Days)}
+
+The dataset covers only January 2021. This limits:
+\begin{itemize}
+    \item \textbf{Seasonal analysis}: We cannot detect monthly or yearly
+          cycles. Weekly cycles are the longest detectable pattern.
+    \item \textbf{Model training}: 31 data points (daily) is small for
+          complex models. SARIMA and simple regression are appropriate;
+          deep learning (LSTM) is not, unless we aggregate at finer
+          granularity (hourly: $31 \times 24 = 744$ points).
+    \item \textbf{Forecasting horizon}: With 31 days total and an 80/20
+          split, we forecast only $\sim$6 days. This is sufficient for
+          demonstration but limits real-world applicability.
+\end{itemize}
+
+\subsection{Data Granularity}
+
+The data has \textbf{minute-level resolution} (Date + Time). This enables
+session analysis and fine-grained vibe assignment but also means aggregation
+choices matter:
+\begin{itemize}
+    \item \textbf{Hourly aggregation}: 744 points, good for diversity and
+          session metrics.
+    \item \textbf{Daily aggregation}: 31 points, good for SARIMA and
+          high-level trends.
+    \item \textbf{Weekly aggregation}: $\sim$4 points, too few for ML but
+          good for summary statistics.
+\end{itemize}
+
+The ideal approach is to compute metrics at \textbf{daily resolution} for
+time series modelling, and at \textbf{hourly resolution} when more data
+points are needed (e.g.\ for neural models or gap analysis).
+
+\subsection{Missing Genre Information}
+
+The dataset contains Artist, Track, and Album but \textbf{no genre or audio
+features}. This means:
+\begin{itemize}
+    \item We cannot directly compute ``vibe'' in the musical sense (e.g.\
+          energy, valence, danceability).
+    \item However, genre can be \textbf{approximated} by using artist-level
+          clusters from SVD on the user-artist interaction matrix (as
+          explored in the \texttt{svd\_kmeans\_test/} directory).
+    \item External APIs (Last.fm tags, Spotify audio features) could enrich
+          the dataset if desired.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Conclusion}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Raw play count is merely the surface of what \texttt{fm\_data.csv} can
+reveal. By reframing the data through the lens of \textbf{vibes},
+\textbf{diversity}, \textbf{discovery}, \textbf{sessions}, and
+\textbf{loyalty}, we unlock a rich multi-dimensional portrait of listening
+behaviour.
+
+The ``vibes'' framework is the most significant conceptual contribution:
+it transforms timestamps from raw numbers into meaningful behavioural
+categories, enabling both human-interpretable summaries and powerful
+machine learning features. When crossed with metrics like Shannon entropy
+or discovery rate, vibes reveal \emph{why} a user listens differently at
+different times --- not just \emph{that} they do.
+
+Every metric explored in this document is computable from the existing data,
+produces a meaningful time series plot, and has a well-defined machine
+learning modelling strategy. The recommended priority order balances
+novelty, visual impact, computational feasibility, and insight depth.
+
+The next step is to implement these analyses, starting with the vibe
+framework and diversity index, building toward a comprehensive dashboard
+that integrates all perspectives into a unified view of music listening
+behaviour.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\end{document}

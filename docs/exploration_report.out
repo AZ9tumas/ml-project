@@ -1,0 +1,68 @@
+\BOOKMARK [1][-]{section.1}{Motivation: Why Move Beyond Play Count?}{}% 1
+\BOOKMARK [1][-]{section.2}{The ``Listening Vibes'' Framework}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{What Are Vibes?}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Proposed Vibe Definitions}{section.2}% 4
+\BOOKMARK [3][-]{subsubsection.2.2.1}{Primary Vibes \(Time-of-Day\)}{subsection.2.2}% 5
+\BOOKMARK [3][-]{subsubsection.2.2.2}{Compound Vibes \(Day + Time\)}{subsection.2.2}% 6
+\BOOKMARK [2][-]{subsection.2.3}{What Makes Vibes Analytically Powerful?}{section.2}% 7
+\BOOKMARK [2][-]{subsection.2.4}{Vibes as a Time Series}{section.2}% 8
+\BOOKMARK [3][-]{subsubsection.2.4.1}{Vibe Composition Plot \(Stacked Area\)}{subsection.2.4}% 9
+\BOOKMARK [3][-]{subsubsection.2.4.2}{Vibe Volume Plot \(Absolute Counts\)}{subsection.2.4}% 10
+\BOOKMARK [3][-]{subsubsection.2.4.3}{Machine Learning Approach for Vibes}{subsection.2.4}% 11
+\BOOKMARK [1][-]{section.3}{Listening Diversity Index \(Shannon Entropy\)}{}% 12
+\BOOKMARK [2][-]{subsection.3.1}{What It Measures}{section.3}% 13
+\BOOKMARK [2][-]{subsection.3.2}{Normalized Entropy}{section.3}% 14
+\BOOKMARK [2][-]{subsection.3.3}{Time Series Plot}{section.3}% 15
+\BOOKMARK [2][-]{subsection.3.4}{Cross with Vibes}{section.3}% 16
+\BOOKMARK [2][-]{subsection.3.5}{Machine Learning Approach}{section.3}% 17
+\BOOKMARK [1][-]{section.4}{New Artist Discovery Rate}{}% 18
+\BOOKMARK [2][-]{subsection.4.1}{What It Measures}{section.4}% 19
+\BOOKMARK [2][-]{subsection.4.2}{Cumulative Discovery Curve}{section.4}% 20
+\BOOKMARK [2][-]{subsection.4.3}{Time Series Plot}{section.4}% 21
+\BOOKMARK [2][-]{subsection.4.4}{Cross with Vibes}{section.4}% 22
+\BOOKMARK [2][-]{subsection.4.5}{Machine Learning Approach}{section.4}% 23
+\BOOKMARK [1][-]{section.5}{Artist Rank Dynamics \(Personal Billboard Chart\)}{}% 24
+\BOOKMARK [2][-]{subsection.5.1}{What It Measures}{section.5}% 25
+\BOOKMARK [2][-]{subsection.5.2}{Time Series Plot}{section.5}% 26
+\BOOKMARK [2][-]{subsection.5.3}{Machine Learning Approach}{section.5}% 27
+\BOOKMARK [1][-]{section.6}{Listening Session Analysis}{}% 28
+\BOOKMARK [2][-]{subsection.6.1}{Defining a Session}{section.6}% 29
+\BOOKMARK [2][-]{subsection.6.2}{Session-Level Metrics}{section.6}% 30
+\BOOKMARK [2][-]{subsection.6.3}{Time Series Plots}{section.6}% 31
+\BOOKMARK [2][-]{subsection.6.4}{Machine Learning Approach}{section.6}% 32
+\BOOKMARK [1][-]{section.7}{Loyalty Score}{}% 33
+\BOOKMARK [2][-]{subsection.7.1}{What It Measures}{section.7}% 34
+\BOOKMARK [2][-]{subsection.7.2}{Time Series Plot}{section.7}% 35
+\BOOKMARK [2][-]{subsection.7.3}{Relationship to Diversity}{section.7}% 36
+\BOOKMARK [2][-]{subsection.7.4}{Machine Learning Approach}{section.7}% 37
+\BOOKMARK [1][-]{section.8}{Seasonal and Cyclical Patterns}{}% 38
+\BOOKMARK [2][-]{subsection.8.1}{Weekly Cycles}{section.8}% 39
+\BOOKMARK [2][-]{subsection.8.2}{Artist Seasonality Heatmap}{section.8}% 40
+\BOOKMARK [2][-]{subsection.8.3}{Hourly Distribution \(Listening Clock\)}{section.8}% 41
+\BOOKMARK [2][-]{subsection.8.4}{Machine Learning Approach}{section.8}% 42
+\BOOKMARK [1][-]{section.9}{Track Repeat Intensity}{}% 43
+\BOOKMARK [2][-]{subsection.9.1}{What It Measures}{section.9}% 44
+\BOOKMARK [2][-]{subsection.9.2}{Time Series Plot}{section.9}% 45
+\BOOKMARK [2][-]{subsection.9.3}{Machine Learning Approach}{section.9}% 46
+\BOOKMARK [1][-]{section.10}{Artist Lifespan Analysis}{}% 47
+\BOOKMARK [2][-]{subsection.10.1}{What It Measures}{section.10}% 48
+\BOOKMARK [2][-]{subsection.10.2}{Visualisation}{section.10}% 49
+\BOOKMARK [2][-]{subsection.10.3}{Machine Learning Approach}{section.10}% 50
+\BOOKMARK [1][-]{section.11}{Listening Gap Analysis}{}% 51
+\BOOKMARK [2][-]{subsection.11.1}{What It Measures}{section.11}% 52
+\BOOKMARK [2][-]{subsection.11.2}{Time Series Plot}{section.11}% 53
+\BOOKMARK [2][-]{subsection.11.3}{Machine Learning Approach}{section.11}% 54
+\BOOKMARK [1][-]{section.12}{Rolling Unique Artist Count}{}% 55
+\BOOKMARK [2][-]{subsection.12.1}{What It Measures}{section.12}% 56
+\BOOKMARK [2][-]{subsection.12.2}{Time Series Plot}{section.12}% 57
+\BOOKMARK [2][-]{subsection.12.3}{Machine Learning Approach}{section.12}% 58
+\BOOKMARK [1][-]{section.13}{Multi-User Comparative Analysis}{}% 59
+\BOOKMARK [2][-]{subsection.13.1}{Possible Comparisons}{section.13}% 60
+\BOOKMARK [2][-]{subsection.13.2}{Machine Learning Approach}{section.13}% 61
+\BOOKMARK [1][-]{section.14}{Comprehensive Summary of All Possibilities}{}% 62
+\BOOKMARK [1][-]{section.15}{Recommended Priority Order}{}% 63
+\BOOKMARK [1][-]{section.16}{Constraints and Considerations}{}% 64
+\BOOKMARK [2][-]{subsection.16.1}{Limited Time Span \(31 Days\)}{section.16}% 65
+\BOOKMARK [2][-]{subsection.16.2}{Data Granularity}{section.16}% 66
+\BOOKMARK [2][-]{subsection.16.3}{Missing Genre Information}{section.16}% 67
+\BOOKMARK [1][-]{section.17}{Conclusion}{}% 68
